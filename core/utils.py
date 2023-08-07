@@ -6,7 +6,7 @@ from datetime import datetime
 import gspread
 import pygsheets
 from create_bot import GSERVICEACCOUNTFILE, SHEETID_PARAM
-from logger import logger
+from logger.logger import logger
 
 # Google Sheets setup
 google_drive = None
