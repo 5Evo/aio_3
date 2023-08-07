@@ -29,6 +29,7 @@ LOGGING_SERVICE = "agent5_01"
 APPRISE_CONFIG_PATH = "settings/apprise.yml"
 
 # Настройка БД
+RECREATE_DB = False  # удаляем ли старые таблицы при запуске бота (обновляем структуры таблицы, но теряем данные)
 DB_TYPE = 'POSTGRE'
 #DB_TYPE = 'SQLite3'
 

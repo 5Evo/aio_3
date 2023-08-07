@@ -130,6 +130,7 @@ class WorkerOpenAI:
     def get_chatgpt_answer(self, topic):
         # Выборка документов по схожести с вопросом
         docs = self.search_index.similarity_search(topic, k=8)
+        #print(f'get_chatgpt_answer: {docs}')
         message_content = re.sub(r'\n{2}', ' ', '\n '.join(
             [f'\n==  ' + doc.page_content + '\n' for i, doc in enumerate(docs)]))
         user_promt = USER_PROMT.format(message_content, topic)
@@ -150,7 +151,7 @@ class WorkerOpenAI:
         #print('===========================================: \n')
         #print('Ответ ChatGPT: ')
         #print(completion.choices[0].message.content)
-        return completion, messages
+        return completion, messages, docs
 
 
 if __name__ == '__main__':

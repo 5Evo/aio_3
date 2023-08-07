@@ -31,10 +31,12 @@ async def on_startup(_):
 
 # Запуск бота
 async def main():
-    logger.info(f"Starting bot")
+    logger.info(f"Starting main")
 
     dp.include_router(admin_handler.router)
+    logger.info(f"Router ADMIN is started")
     dp.include_router(user_handler.router)
+    logger.info(f"Router USER is started")
 
     # Запускаем бота и пропускаем все накопленные входящие
     # Да, этот метод можно вызвать даже если у вас поллинг

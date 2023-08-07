@@ -1,37 +1,94 @@
-version: "3"
-
+version: "3.9"
 services:
-
   postgres:
-    container_name: postgres-bot
-    image: postgres:12-alpine
+    hostname: postgres
+    container_name: postgres
+    image: postgres:14.8
     restart: always
+#    command:
+#      - "postgres"
+#      - "-c"
+#      - "max_connections=50"
+#      - "-c"
+#      - "shared_buffers=1GB"
+#      - "-c"
+#      - "effective_cache_size=4GB"
+#      - "-c"
+#      - "work_mem=16MB"
+#      - "-c"
+#      - "maintenance_work_mem=512MB"
+#      - "-c"
+#      - "random_page_cost=1.1"
+#      - "-c"
+#      - "temp_file_limit=10GB"
+#      - "-c"
+#      - "log_min_duration_statement=200ms"
+#      - "-c"
+#      - "idle_in_transaction_session_timeout=10s"
+#      - "-c"
+#      - "lock_timeout=1s"
+#      - "-c"
+#      - "statement_timeout=60s"
+#      - "-c"
+#      - "shared_preload_libraries=pg_stat_statements"
+#      - "-c"
+#      - "pg_stat_statements.max=10000"
+#      - "-c"
+#      - "pg_stat_statements.track=all"
     env_file:
-      - .env
+      - .env_prod
     environment:
-      - POSTGRES_PASSWORD=${PG_PASSWORD}
-      - POSTGRES_USER=${PG_USER}
-      - POSTGRES_DB=${PG_NAME}
-      - PGDATA=${PG_DATA}
-    ports:
-      - ${PG_PORT}:${PG_PORT}
-    expose:
-      - ${PG_PORT}
+      - POSTGRES_PASSWORD=${POSTGRE_PASSW}
+      - POSTGRES_USER=${POSTGRE_USER}
+      - POSTGRES_DB=${POSTGRE_DB}
+      - POSTGRES_HOST=${POSTGRE_HOST}
     volumes:
-      - /usr/src/app/data:/var/lib/postgresql/data/pgdata
+      - agent5_db:/var/lib/postgresql/data
+    networks:
+      - agent_net
+    ports:
+      - "5432:5432"
+#    healthcheck:
+#      test: ["CMD-SHELL", "pg_isready -U ${POSTGRE_USER} -d ${POSTGRE_DB}"]
+#      interval: 10s
+#      timeout: 5s
+#      retries: 5
+#      start_period: 10s
+#    restart: unless-stopped
+#    deploy:
+#      resources:
+#        limits:
+#          cpus: '1'
+#          memory: 1G
 
   bot:
-    container_name: telegram-bot
+    container_name: tg_bot
     build: .
     restart: always
-    env_file:
-      - .env
+    volumes:
+      - type: bind
+        source: /home/agadmin/agent5/01/faiss_indexes
+        target: /aio_3/faiss_indexes
+      - type: bind
+        source: /home/agadmin/agent5/01/settings
+        target: /aio_3/settings
+
     links:
       - postgres
-
     depends_on:
       - postgres
+    networks:
+      - agent_net
+    env_file:
+      - .env_prod
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRE_PASSW}
+      - POSTGRES_USER=${POSTGRE_USER}
+      - POSTGRES_DB=${POSTGRE_DB}
+      - POSTGRES_HOST=${POSTGRE_HOST}
 
+networks:
+  agent_net:
 
 volumes:
-  postgres-data:
+  agent5_db:

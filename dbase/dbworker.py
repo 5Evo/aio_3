@@ -1,9 +1,10 @@
 import psycopg2
 import sqlite3
 import pandas as pd
+from logger.logger import logger    # импортируем свой Логгер из папки logger
 
-from config import DB_TYPE
-from create_bot import POSTGRE_HOST, POSTGRE_DB, POSTGRE_USER, POSTGRE_PASSW
+from config import DB_TYPE, RECREATE_DB
+from create_bot import POSTGRE_HOST, POSTGRE_DB, POSTGRE_USER, POSTGRE_PASSW, POSTGRE_PORT
 
 
 def connect_db(db_type):
@@ -15,6 +16,7 @@ def connect_db(db_type):
     if db_type == 'POSTGRE':
         connection = psycopg2.connect(
             host=POSTGRE_HOST,
+            port=POSTGRE_PORT,
             database=POSTGRE_DB,
             user=POSTGRE_USER,
             password=POSTGRE_PASSW)
@@ -33,14 +35,19 @@ def create_db():
         Создаем 2 таблицы в PostgreSQL: users и history
         :return:
         """
-
+    print(f'Начнем создавать таблицы')
+    logger.info(f'connect_db:\n - {POSTGRE_HOST =}\n - {POSTGRE_PORT =}\n - {POSTGRE_DB =}\n - {POSTGRE_USER =}\n - {POSTGRE_PASSW =}')
+    #print(f'connect_db:\n - {POSTGRE_HOST =}\n - {POSTGRE_PORT =}\n - {POSTGRE_DB =}\n - {POSTGRE_USER =}\n - {POSTGRE_PASSW =}')
     try:
         connection = connect_db(DB_TYPE)
         cursor = connection.cursor()
         print(f'Успешно подключились к {DB_TYPE}')
 
         # создаем таблицу users в Posgres
-        # в SQLite первая строка доджна быть: "user_id INTEGER PRIMARY KEY,"
+        # в SQLite первая строка должна быть: "user_id INTEGER PRIMARY KEY,"
+        if RECREATE_DB:
+            cursor.execute('DROP TABLE IF EXISTS users')    # удалили старую таблицу
+            print('Удалили таблицу USERS в БД')
         cursor.execute(
             '''CREATE TABLE IF NOT EXISTS users (
                 user_id SERIAL PRIMARY KEY,
@@ -52,6 +59,7 @@ def create_db():
                 last_dialog TEXT,
                 last_question TEXT,
                 last_answer TEXT,
+                last_chunks TEXT,
                 last_num_token REAL, 
                 dialog_state TEXT DEFAULT 'finish',
                 dialog_score REAL DEFAULT 0,
@@ -63,12 +71,16 @@ def create_db():
 
         # создаем таблицу history
         # в SQLite первая строка должна быть: "id INTEGER PRIMARY KEY,"
+        if RECREATE_DB:
+            cursor.execute('DROP TABLE IF EXISTS history')    # удалили старую таблицу
+            print('Удалили таблицу history в БД')
         cursor.execute(
             '''CREATE TABLE IF NOT EXISTS history (
                 id SERIAL PRIMARY KEY,
                 user_id INTEGER NOT NULL,
                 score_name TEXT,
                 score_text TEXT,
+                score_chunck TEXT,
                 score INTEGER,
                 num_token INTEGER,
                 date_estimate TEXT,
@@ -143,17 +155,17 @@ def add_user(user_data):
     if DB_TYPE == 'SQLite3':
         cursor.execute(
             "INSERT OR IGNORE INTO users (user_id, e_mail, first_name, last_name, username, last_interaction, "
-            "last_dialog, last_question, last_answer, last_num_token, dialog_state, dialog_score, last_time_duration, "
+            "last_dialog, last_question, last_answer, last_chunks, last_num_token, dialog_state, dialog_score, last_time_duration, "
             "num_queries) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             user_data,)
 
     elif DB_TYPE == 'POSTGRE':
         cursor.execute(
             "INSERT INTO users (user_id, e_mail, first_name, last_name, username, last_interaction,  "
-            "last_dialog, last_question, last_answer, last_num_token, dialog_state, dialog_score, last_time_duration, "
+            "last_dialog, last_question, last_answer, last_chunks, last_num_token, dialog_state, dialog_score, last_time_duration, "
             "num_queries) "
-            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
             user_data,)
     else:
         raise Exception("connect_db(): Не установленный тип БД")
@@ -172,17 +184,17 @@ def add_history(history_data):
     """
     connection = connect_db(DB_TYPE)
     cursor = connection.cursor()
-
+    # print(f'add_history: {type(history_data)}, {history_data = }')
     if DB_TYPE == 'SQLite3':
         cursor.execute(
-            "INSERT OR IGNORE INTO history (user_id , score_name, score_text, score, num_token, date_estimate, "
-            "time_duration) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            "INSERT OR IGNORE INTO history (user_id , score_name, score_text, score_chunck, score, num_token, date_estimate, "
+            "time_duration) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             history_data,
         )
     elif DB_TYPE == 'POSTGRE':
         cursor.execute(
-            "INSERT INTO history (user_id , score_name, score_text, score, num_token, date_estimate, time_duration) "
-            "VALUES (%s,%s,%s,%s,%s,%s,%s)",
+            "INSERT INTO history (user_id , score_name, score_text, score_chunck, score, num_token, date_estimate, time_duration) "
+            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
             history_data,
         )
     else:
@@ -294,6 +306,36 @@ def update_last_dialog(user_id, last_dialog):
     cursor.close()          # добавил при переходе на PostgreSQL
     connection.close()
 
+
+def update_last_chunks(user_id, last_chunks):
+    """
+    Обновляем чанки последнего запроса для передачи их в таблицу истории
+    :param user_id:
+    :param last_chunks:
+    :return:
+    """
+    connection = connect_db(DB_TYPE)
+    cursor = connection.cursor()
+    #print(f'update_last_chunks_1: {type(last_chunks) = }')
+    chunks_txt = "\n\n".join(str(x) for x in last_chunks) # преобразуем список чанков к тексту для сохранения в БД
+
+    #print(f'update_last_chunks_2: {type(chunks_txt) = }')
+    if DB_TYPE == 'SQLite3':
+        cursor.execute(
+            "UPDATE users SET last_chunks= ? WHERE user_id = ?",
+            (chunks_txt, user_id), )
+
+    elif DB_TYPE == 'POSTGRE':
+        cursor.execute(
+            "UPDATE users SET last_chunks= %s WHERE user_id = %s",
+            (chunks_txt, user_id), )
+    else:
+        raise Exception("connect_db(): Не установленный тип БД")
+        sys.exit(1)
+
+    connection.commit()
+    cursor.close()  # добавил при переходе на PostgreSQL
+    connection.close()
 
 def update_qa(user_id, last_qa):
     """
@@ -474,9 +516,9 @@ def get_dialog_state(user_id):
     cursor = connection.cursor()
 
     if DB_TYPE == 'SQLite3':
-        cursor.execute("SELECT * FROM users WHERE user_id = ?", (user_id,))
+        cursor.execute("SELECT dialog_state FROM users WHERE user_id = ?", (user_id,))
     elif DB_TYPE == 'POSTGRE':
-        cursor.execute("SELECT * FROM users WHERE user_id = %s", (user_id,))
+        cursor.execute("SELECT dialog_state FROM users WHERE user_id = %s", (user_id,))
     else:
         raise Exception("connect_db(): Не установленный тип БД")
         sys.exit(1)
@@ -485,7 +527,7 @@ def get_dialog_state(user_id):
     cursor.close()          # добавил при переходе на PostgreSQL
     connection.close()
 
-    return result[10] if result else None
+    return result[0] if result else None
 
 
 def get_num_queries(user_id):
@@ -498,9 +540,9 @@ def get_num_queries(user_id):
     cursor = connection.cursor()
 
     if DB_TYPE == 'SQLite3':
-        cursor.execute("SELECT * FROM users WHERE user_id = ?", (user_id,))
+        cursor.execute("SELECT num_queries FROM users WHERE user_id = ?", (user_id,))
     elif DB_TYPE == 'POSTGRE':
-        cursor.execute("SELECT * FROM users WHERE user_id = %s", (user_id,))
+        cursor.execute("SELECT num_queries FROM users WHERE user_id = %s", (user_id,))
     else:
         raise Exception("connect_db(): Не установленный тип БД")
         sys.exit(1)
@@ -508,8 +550,8 @@ def get_num_queries(user_id):
     result = cursor.fetchone()
     cursor.close()          # добавил при переходе на PostgreSQL
     connection.close()
-
-    return result[13] if result else None
+    #print(f'dbworker: get_num_queries {result[0] =}')
+    return result[0] if result else None
 
 
 def get_all_users():
@@ -541,7 +583,7 @@ def get_df_users():
 
     # Query all records from the users table
     result = pd.read_sql_query("SELECT * FROM users", connection)
-
+    #print(f'dbworker.py: get_df_users {result =}')
     connection.close()
 
     return result

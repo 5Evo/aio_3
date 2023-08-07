@@ -29,7 +29,7 @@ def share_google_sheets(email_address):
         gc = pygsheets.authorize(service_file=GSERVICEACCOUNTFILE)
         sh = gc.open_by_url(f'https://docs.google.com/spreadsheets/d/{SHEETID_PARAM}')
         sh.share(email_address, role='writer', type='anyone')
-        logger.info(f'share_google_sheets: Упешно!')
+        logger.info(f'share_google_sheets: Уcпешно!')
     except Exception as e:
         logger.error(f'share_google_sheets: {e}')
 
@@ -62,11 +62,13 @@ def set_report_into_gsh():
         sh = gc.open_by_key(SHEETID_PARAM)                          # Открываем таблицу Google Sheets по ключу SHEETID_PARAM
         # Заголовки столбцов
         columns_users = [                                           # Создаем список columns_users с заголовками столбцов таблицы "Пользователи"
-            'user_id', 'e_mail', 'first_name', 'last_name', 'username', 'last_interaction', 'num_queries'
+            'user_id', 'e_mail', 'first_name', 'last_name', 'username', 'last_interaction', 'num_queries',
+            'last_dialog', 'last_question', 'last_answer'
         ]
 
         columns_history = [                                         # Создаем список columns_history с заголовками столбцов таблицы "Оценки"
-            'user_id', 'score_name', 'score_text', 'score', 'num_token', 'date_estimate', 'time_duration'
+            'user_id', 'score_name', 'score_text', 'score_chunks', 'score', 'num_token', 'date_estimate',
+            'time_duration'
         ]
 
         sheet_name = ['Пользователи', 'Оценки']                     # Создаем список sheet_name с названиями листов таблицы
@@ -83,7 +85,12 @@ def set_report_into_gsh():
     except Exception as e:
         logger.error(f'set_report_into_gsh: {e}')
 
+
 def set_users_into_gsh():
+    """
+    Добавление нового пользователя в таблицу Google
+    :return:
+    """
     #print(f'1. set_users_into_gsh: Полный путь к файлу "{GSERVICEACCOUNTFILE}": {os.path.abspath(GSERVICEACCOUNTFILE)}\n {SHEETID_PARAM =}')
     # if os.path.isfile(GSERVICEACCOUNTFILE):
     #     print(f"File exists {os.path.abspath(GSERVICEACCOUNTFILE)}")
@@ -106,6 +113,10 @@ def set_users_into_gsh():
 
 
 def get_report():
+    """
+    Формируем отчет в электронную таблицу XLS
+    :return:
+    """
 
     # Заголовки столбцов
     columns_users = [
@@ -113,7 +124,7 @@ def get_report():
     ]
 
     columns_history = [
-        'user_id', 'score_name', 'score_text', 'score', 'num_token', 'date_estimate', 'time_duration'
+        'user_id', 'score_name', 'score_text', 'score', 'score_chunck', 'num_token', 'date_estimate', 'time_duration'
     ]
 
     sheet_name = ['Пользователи', 'Оценки']

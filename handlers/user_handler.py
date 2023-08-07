@@ -13,7 +13,7 @@ from create_bot import bot
 from core import main_chatgpt
 from dbase.dbworker import add_user, get_user_entry, update_last_interaction, update_last_dialog, get_user, \
     update_dialog_state, update_dialog_score, add_history, get_dialog_state, update_last_num_token, update_qa, \
-    update_last_time_duration, get_num_queries, update_num_queries
+    update_last_time_duration, get_num_queries, update_num_queries, update_last_chunks
 from keyboards.user_keyboard import drating_inline_buttons_keyboard
 from bot import logger
 from handlers.admin_handler import ADMIN_CHAT_ID
@@ -44,6 +44,7 @@ async def cmd_start(message: types.Message):
             None,
             None,
             None,
+            None,
             0,
             "finish",
             0,
@@ -54,7 +55,7 @@ async def cmd_start(message: types.Message):
         try:
             set_users_into_gsh()
             logger.info(
-                f"Обновление страницы users, успешно!")
+                f"Добавили нового user в Google-таблицу!")
         except Exception as error:
             logger.warning(
                 f"Ошибка добавления записи Пользователи: {error}")
@@ -67,6 +68,8 @@ async def cmd_start(message: types.Message):
         else:
             await message.reply(welcome_message + "\n\nЗадайте свой вопрос...", parse_mode='HTML')
             update_dialog_state(message.from_user.id, 'start')
+    dialog_status = get_dialog_state(message.from_user.id)
+    #print(f'user_handler: cmd_start: {dialog_status = }')
     await asyncio.sleep(1)
 
 
@@ -218,9 +221,12 @@ async def reset_context(message: types.Message):
 @router.callback_query(lambda c: c.data.startswith("drate_"))
 async def process_callback_qrating(callback_query: types.CallbackQuery):
     if get_dialog_state(callback_query.from_user.id) == 'close':
-        user_data = get_user(callback_query.from_user.id)
-
+        user_data = get_user(callback_query.from_user.id)   # получим из БД информацию о пользователе
+        #print(f'process_callback_qrating: {user_data = }')
+        score_chuncks = user_data[9]
+        print(f'process_callback_qrating: {score_chuncks = }')
         rating = int(callback_query.data[6:])
+        #print(f'process_callback_qrating: {type(rating)}, {rating = }')
         await bot.answer_callback_query(callback_query.id, text=f"Спасибо за вашу оценку: {rating}!", show_alert=True)
         if callback_query.from_user.id in ADMIN_CHAT_ID:
             await bot.send_message(callback_query.from_user.id, f"Спасибо за вашу оценку: {rating}! Можете задать "
@@ -232,16 +238,27 @@ async def process_callback_qrating(callback_query: types.CallbackQuery):
         update_dialog_state(callback_query.from_user.id, 'finish')
         # Здесь сохраняется оценка пользователя для дальнейшего анализа или использования
         update_dialog_score(callback_query.from_user.id, rating)
+
+        # переда записью истории проверим содержимое user_data:
+        for i, item in enumerate(user_data):
+            print(f'User_data[{i}]. {item}')
+
         # Запись истории
         history_data = (
             callback_query.from_user.id,
             "question",
             "\n".join([f'Пользователь: {user_data[7]}', f'Ассистент: {user_data[8]}']),
+            score_chuncks,
             rating,
-            user_data[9],
+            user_data[10],
             datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            user_data[12]
+            user_data[13]
         )
+
+        # переда записью истории проверим содержимое history_data:
+        for i, item in enumerate(history_data):
+            print(f'history_data[{i}]. {item}')
+
         add_history(history_data)
         try:
             logger.info(
@@ -256,6 +273,7 @@ async def process_callback_qrating(callback_query: types.CallbackQuery):
 
 @router.message(lambda message: get_dialog_state(message.from_user.id) in ['start', 'finish'])
 async def generate_answer(message: types.Message):
+    #print(f'generate_answer: starting...')
     update_last_interaction(message.from_user.id, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     num_queries = get_num_queries(message.from_user.id)
     #print(f'generate_answer: {num_queries = }')
@@ -264,15 +282,18 @@ async def generate_answer(message: types.Message):
             msg = await message.answer("Идет подготовка ответа. Ждите...⏳")  # msg["message_id"]
             time1 = datetime.now()
             logger.info(f"Запрос пошел: {message.text}")
-            completion, dialog = main_chatgpt.WorkerOpenAI().get_chatgpt_answer(message.text)
+            completion, dialog, chunks = main_chatgpt.WorkerOpenAI().get_chatgpt_answer(message.text)
             #logger.info(f"Запрос вернулся: {completion}")
             logger.info(f"Запрос вернулся: [completion]")
+            #content_to_print = dialog[1]['content']
+            #print(f'user_handler: generate_answer: {content_to_print = }')
+            #print(f'user_handler: generate_answer: {chunks = }')
             time2 = datetime.now()
             duration = time2 - time1
             await msg.edit_text(completion.choices[0].message.content)
             #logger.info(f"ЦЕНА запроса: {0.0002 * (completion['usage']['total_tokens'] / 1000)}$\n {completion['usage']}")
             logger.info(f"ЦЕНА запроса: {0.004 * (completion['usage']['total_tokens'] / 1000)}$")
-
+            update_last_chunks(message.from_user.id, chunks)
             update_last_dialog(message.from_user.id, json.dumps(dialog))
             update_last_time_duration(message.from_user.id, int(duration.total_seconds()))
             update_qa(message.from_user.id, (message.text, completion.choices[0].message.content))
@@ -290,4 +311,10 @@ async def generate_answer(message: types.Message):
     else:
         await bot.send_message(message.from_user.id, "Вы исчерпали всё количество запросов (10) демонстрационного "
                                                      "режима.\nСпасибо что воспользовались нашим Помощником! 🤝")
+    await asyncio.sleep(1)
+
+
+async def generate_algorithm_error(message: types.Message):
+    logger.warning(f"Ошибка алгоритма бота. Сообщение пользователя не обработано")
+    await message.answer("Извините, сбой в алгоритме Бота: ваше сообщение не обработано")
     await asyncio.sleep(1)
