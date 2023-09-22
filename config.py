@@ -1,5 +1,5 @@
 """
-Настройки параметров и переменных проекта.
+Настройки параметров и переменных проекта для разработчика.
 Файл будет храниться во внутренней папке Docker,
 доступа извне не будет в отличие от папки Settings.
 
@@ -10,6 +10,10 @@
 чтобы хранящиеся там индексы, можно было добавлять боту налету.
 """
 import os
+
+CHEAP_MODEL = 'gpt-3.5-turbo'
+EXPENSIVE_MODEL = 'gpt-3.5-turbo-16k'
+TEMPERATURE = 0.01
 
 # Промты
 SYSTEM_PROMT_FILE = 'system_promt.txt'      # '/home/alex/PycharmProjects/aio_3/settings/system_promt.txt'
@@ -23,7 +27,7 @@ TXT_DB_DIR = 'txt_docs'
 SETTINGS_PATH = 'settings'      # хранение внешних настроек, промтов
 
 # Настройки логирования:
-LOGGING_SERVICE = "agent5_01"
+LOGGING_SERVICE = "agent5_00"
 
 # путь до внешней папки с настройками уведомлений TG_bot
 APPRISE_CONFIG_PATH = "settings/apprise.yml"
