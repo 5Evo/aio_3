@@ -1,7 +1,7 @@
 import sys
 
 from logger.logger import logger
-from config import ROOT_DIR, SETTINGS_PATH, FAISS_DB_DIR, SYSTEM_PROMT_FILE, USER_PROMT
+from config import ROOT_DIR, SETTINGS_PATH, FAISS_DB_DIR, SYSTEM_PROMT_FILE, USER_PROMT, CHEAP_MODEL, EXPENSIVE_MODEL, TEMPERATURE
 from create_bot import OPENAI_API_KEY
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.vectorstores import FAISS
@@ -22,12 +22,25 @@ try:
     with open(system_promt_file, 'r') as file:
         system_promt = file.read()
         logger.info(f'(Прочитали system-promt)')
+        # logger.info(f'(Прочитали system-promt): {system_promt_file} - {system_promt}')
 except Exception as e:
     print(f'Ошибка чтения ПРОМТА: {e}')
 
 
 class WorkerOpenAI:
-    def __init__(self, faiss_db_dir=faiss_db_dir, list_indexes=None, mod='gpt-3.5-turbo'):
+    def __init__(self, faiss_db_dir=faiss_db_dir, list_indexes=None, mod=EXPENSIVE_MODEL):
+        # старт инициализации промта
+        # Прочитаем Системный промт из файла
+        system_promt_file = os.path.join(ROOT_DIR, SETTINGS_PATH, SYSTEM_PROMT_FILE)
+        try:
+            with open(system_promt_file, 'r') as file:
+                system_promt = file.read()
+                logger.info(f'(Прочитали system-promt)')
+                # logger.info(f'(Прочитали system-promt): {system_promt_file} - {system_promt}')
+        except Exception as e:
+            print(f'Ошибка чтения ПРОМТА: {e}')
+
+        # конец инициализации промта
 
         # Составим список всех индексов в папке faiss_db_dir:
         # print(f'Ищем список курсов: {faiss_db_dir}')
@@ -143,7 +156,7 @@ class WorkerOpenAI:
         completion = openai.ChatCompletion.create(
             model=self.model,
             messages=messages,
-            temperature=0.2
+            temperature=TEMPERATURE
         )
 
         #print(f'{completion["usage"]["total_tokens"]} токенов использовано всего (вопрос-ответ).')

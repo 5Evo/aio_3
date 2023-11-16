@@ -42,7 +42,7 @@ def get_files(path=txt_db_dir):
 def create_faiss_indexes(path=txt_db_dir):
     all_txt_files = get_files()
     print(f'create_faiss_indexes: Проверим файлы в директории "{TXT_DB_DIR}": \n {all_txt_files}')
-    text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)  # создали Спилттер для разбиения на чанки
+    text_splitter = CharacterTextSplitter(chunk_size=1050, chunk_overlap=0)  # создали Сплиттер для разбиения на чанки
     embeddings = OpenAIEmbeddings()  # по умолчанию использует самую дешевую модель 'text-embedding-ada-002'
 
     for file in all_txt_files:
@@ -101,15 +101,16 @@ if __name__ == '__main__':
     create_faiss_indexes()
     faiss_indexes = get_bases()
     db = read_faiss_indexes(faiss_indexes)
-    # query1 = "расскажи про менеждера по продажам"
-    # docs1 = db.similarity_search(query1)
-    # print(f"{query1 =}")
-    # print(docs1[0].page_content)
 
-    query2 = "Импортный крепеж"
-    docs2 = db.similarity_search(query2)
-    print(f"{query2 =}")
-    print(docs2[0].page_content)
+    query1 = "Как происходит перемещение контейнера"
+    docs1 = db.similarity_search(query1)
+    print(f"{query1 =}")
+    print(docs1[0].page_content)
+
+    # query2 = "Импортный крепеж"
+    # docs2 = db.similarity_search(query2)
+    # print(f"{query2 =}")
+    # print(docs2[0].page_content)
 """
     # Uncomment the following line if you need to initialize FAISS with no AVX2 optimization
     # os.environ['FAISS_NO_AVX2'] = '1'

@@ -150,10 +150,11 @@ def get_report():
 
 if __name__ == '__main__':
 
-    #url_sh = creat_new_google_sheets('test_agent5')
-    #print(f'{url_sh =}')
-    #share_google_sheets('') # выдача права на редактривание каждому у кого есть ссылка
+    # url_sh = creat_new_google_sheets('agent500')
+    # print(f'{url_sh =}')
+    # TODO: выдача прав работает некорректно: после того, как создали новую таблицу ее SHEETID_PARAM сначала надо внести в CONFIF, а уже затем вторым запуском расшаривать
+    share_google_sheets('') # выдача права на редактривание каждому у кого есть ссылка
 
     #get_report()
     #set_users_into_gsh()
-    pass
+    #pass

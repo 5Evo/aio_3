@@ -21,7 +21,7 @@ def connect_db(db_type):
             user=POSTGRE_USER,
             password=POSTGRE_PASSW)
     elif db_type == 'SQLite3':
-        db_path = 'db_agent_501.db'
+        db_path = 'db_agent_500.db'
         connection = sqlite3.connect(db_path)
     else:
         raise Exception("connect_db(): Не установленный тип БД")
@@ -47,7 +47,7 @@ def create_db():
         # в SQLite первая строка должна быть: "user_id INTEGER PRIMARY KEY,"
         if RECREATE_DB:
             cursor.execute('DROP TABLE IF EXISTS users')    # удалили старую таблицу
-            print('Удалили таблицу USERS в БД')
+            print('Удалили таблицу USERS в БД, т.к. RECREATE_DB=True в конфиге')
         cursor.execute(
             '''CREATE TABLE IF NOT EXISTS users (
                 user_id SERIAL PRIMARY KEY,
@@ -73,7 +73,7 @@ def create_db():
         # в SQLite первая строка должна быть: "id INTEGER PRIMARY KEY,"
         if RECREATE_DB:
             cursor.execute('DROP TABLE IF EXISTS history')    # удалили старую таблицу
-            print('Удалили таблицу history в БД')
+            print('Удалили таблицу history в БД, т.к. RECREATE_DB=True в конфиге')
         cursor.execute(
             '''CREATE TABLE IF NOT EXISTS history (
                 id SERIAL PRIMARY KEY,

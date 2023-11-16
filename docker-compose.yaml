@@ -36,7 +36,7 @@ services:
 #      - "-c"
 #      - "pg_stat_statements.track=all"
     env_file:
-      - .env_prod
+      - .prod_env
     environment:
       - POSTGRES_PASSWORD=${POSTGRE_PASSW}
       - POSTGRES_USER=${POSTGRE_USER}
@@ -62,16 +62,16 @@ services:
 #          memory: 1G
 
   bot:
-    container_name: tg_bot
+    container_name: tg_bot_agent500
     build: .
     restart: always
     volumes:
       - type: bind
         source: /home/agadmin/agent5/01/faiss_indexes
-        target: /aio_3/faiss_indexes
+        target: /agent5_00/faiss_indexes
       - type: bind
         source: /home/agadmin/agent5/01/settings
-        target: /aio_3/settings
+        target: /agent5_00/settings
 
     links:
       - postgres
@@ -80,7 +80,7 @@ services:
     networks:
       - agent_net
     env_file:
-      - .env_prod
+      - .prod_env
     environment:
       - POSTGRES_PASSWORD=${POSTGRE_PASSW}
       - POSTGRES_USER=${POSTGRE_USER}
