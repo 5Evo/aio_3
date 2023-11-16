@@ -73,11 +73,11 @@ class WorkerOpenAI:
             return db
 
         def create_search_index(indexes):
-            '''
+            """
                 Чтение индексов из всех индексных файлов
                 :param path: локальный путь в проекте до папки с индексами
                 :return: база индексов
-                '''
+                """
             db_path = os.path.join(ROOT_DIR, FAISS_DB_DIR)
             flag = True  # Признак первой базы для чтения. Остальные базы будем добавлять к имеющейся
             # Перебор всех курсов в списке courses:

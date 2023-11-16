@@ -3,11 +3,8 @@
 """
 
 import os
-import sys
 
 import openai
-from logger.logger import logger
-from dotenv import load_dotenv
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.vectorstores import FAISS
@@ -19,7 +16,6 @@ from config import TXT_DB_DIR, ROOT_DIR
 os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
 openai.api_key = OPENAI_API_KEY
 txt_db_dir = os.path.join(ROOT_DIR, TXT_DB_DIR)
-# print(f'{OPENAI_API_KEY =}')
 faiss_db_dir = os.path.join(ROOT_DIR, FAISS_DB_DIR)  # полный путь до индексов
 
 
@@ -31,11 +27,11 @@ def get_file_name(file_path):
 
 
 def get_files(path=txt_db_dir):
-    '''
+    """
     Получение списка файлов в указанной директории для подготовки индексов
     :param path:
     :return:
-    '''
+    """
     files = []
     for file in os.listdir(path):
         if os.path.isfile(os.path.join(path, file)):
@@ -70,11 +66,11 @@ def get_bases():
 
 
 def read_faiss_indexes(indexes):
-    '''
+    """
     Чтение индексов из всех индексных файлов
     :param path: локальный путь в проекте до папки с индексами
     :return: база индексов
-    '''
+    """
     db_path = os.path.join(ROOT_DIR, FAISS_DB_DIR)
     flag = True     # Признак первой базы для чтения. Остальные базы будем добавлять к имеющейся
     # Перебор всех курсов в списке courses:
