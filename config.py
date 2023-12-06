@@ -16,7 +16,7 @@ EXPENSIVE_MODEL = 'gpt-3.5-turbo-16k'
 TEMPERATURE = 0.01
 
 # Промты
-SYSTEM_PROMT_FILE = 'system_promt.txt'      # '/home/alex/PycharmProjects/aio_3/settings/system_promt.txt'
+SYSTEM_PROMT_FILE = 'system_promt.txt'
 USER_PROMT = "Analyze and use these tips in your answer: {}. Give a detailed correct answer to the Client's question: {}\nAnswer:"
 
 # папки и пути
@@ -27,7 +27,7 @@ TXT_DB_DIR = 'txt_docs'
 SETTINGS_PATH = 'settings'      # хранение внешних настроек, промтов
 
 # Настройки логирования:
-LOGGING_SERVICE = "agent5_00"
+LOGGING_SERVICE = "aio_3"
 
 # путь до внешней папки с настройками уведомлений TG_bot
 APPRISE_CONFIG_PATH = "settings/apprise.yml"
