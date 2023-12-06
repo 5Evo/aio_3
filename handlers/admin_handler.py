@@ -12,9 +12,6 @@ router = Router()  # [1]
 # добавляй админов тут:
 ADMIN_CHAT_ID = [
     412539319,  # el_prosto
-    125149424,  # Mmaximenko
-    1045631488, # Павел @neiroseti_ai
-    1456546374, # Duo_the_witch, Dana
 ]
 
 
